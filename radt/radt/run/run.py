@@ -94,5 +94,9 @@ def start_run(args, listeners):
         with RADTBenchmark() as run:
             try:
                 exec(code, globs, None)
+            except Exception as e:
+                print(f"CRITICAL FAILURE in exec: {e}")
+                import traceback
+                traceback.print_exc()
             except (SystemExit, KeyboardInterrupt):
                 pass
