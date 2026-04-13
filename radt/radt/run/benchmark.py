@@ -9,6 +9,7 @@ from mlflow.entities import Metric as MlflowMetric
 from collections import deque
 import multiprocessing
 import queue
+import shutil
 
 from .listeners import listeners
 
@@ -204,15 +205,15 @@ class _RADTBenchmark:
         except FileNotFoundError as e:
             pass
 
-        try:
-            self.log_text("".join(execute_command("conda list")), "conda.txt")
-        except (
-            Exception
-        ) as e:  # Either a FileNotFoundError or DirectoryNotACondaEnvironmentError
-            print(
-                f"Conda not found or unreachable. Continuing without conda list. ({e})"
-            )
-            pass
+        import shutil
+
+        if shutil.which("conda"):
+            try:
+                self.log_text("".join(execute_command("conda list")), "conda.txt")
+            except Exception as e:
+                print(f"Conda failed: {e}")
+        else:
+            print("Conda not available, skipping.")
 
         try:
             self.log_text("".join(execute_command("nvidia-smi")), "smi.txt")
