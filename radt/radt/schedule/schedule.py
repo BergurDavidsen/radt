@@ -710,18 +710,12 @@ def start_schedule(
         workload_definitions = []
 
         # Check if python or python3 is the correct command -- only when not using conda
+        # With this:
         if parsed_args.useconda:
             python_command = "python"
         else:
-            py_check = execute_command(
-                "command -v python || command -v python3", shell=True
-            )
-
-            # if ends on python3, use that
-            if py_check and py_check[-1].strip()[-7:] == "python3":
-                python_command = "python3"
-            else:
-                python_command = "python"
+            import shutil
+            python_command = "python3" if shutil.which("python3") else "python"
 
         for i, (id, row) in enumerate(df_workload.iterrows()):
             row = row.copy()
