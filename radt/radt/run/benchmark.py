@@ -18,35 +18,21 @@ def dummy(*args, **kwargs):
 
 
 def execute_command(cmd: str):
-    """Execute a command
-
-    Args:
-        cmd (str or list): Command to run
-
-    Returns:
-        str: stdout output of the command
-    """
-
     if isinstance(cmd, str):
-        print("cmd is str")
-        cmd = cmd.split()
+        cmd = cmd.split()  # This is fine WITHOUT shell=True
 
     env = os.environ.copy()
-    print(env)
 
     result = []
     with Popen(
-        cmd, stdout=PIPE, bufsize=1, universal_newlines=True, env=env, shell=True
+        cmd, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True, env=env
+        # shell=True removed
     ) as p:
         result.extend(p.stdout)
-        
-
         if p.returncode != 0:
             print("returncode was not 0: ", p.returncode)
-            pass
         print(result)
     return result
-
 
 class _MLFlowLogger(multiprocessing.Process):
     """
