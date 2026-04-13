@@ -17,16 +17,16 @@ def dummy(*args, **kwargs):
     return
 
 
-def execute_command(cmd: str):
-    if isinstance(cmd, str):
-        cmd = cmd.split()  # This is fine WITHOUT shell=True
+def execute_command(cmd: str, shell=False):
+    if isinstance(cmd, str) and not shell:
+        cmd = cmd.split()
 
     env = os.environ.copy()
 
     result = []
     with Popen(
-        cmd, stdout=PIPE, stderr=PIPE, bufsize=1, universal_newlines=True, env=env
-        # shell=True removed
+        cmd, stdout=PIPE, stderr=PIPE, bufsize=1, 
+        universal_newlines=True, env=env, shell=shell
     ) as p:
         result.extend(p.stdout)
         if p.returncode != 0:
