@@ -10,6 +10,7 @@ from collections import deque
 import multiprocessing
 import queue
 import shutil
+import shlex
 
 from .listeners import listeners
 
@@ -29,20 +30,17 @@ def execute_command(cmd: str):
     """
 
     if isinstance(cmd, str):
-        cmd = cmd.split()
+        cmd = shlex.split(cmd)
 
     env = os.environ.copy()
 
-    result = []
-    with Popen(
-        cmd, stdout=PIPE, bufsize=1, universal_newlines=True, env=env, shell=True
-    ) as p:
-        result.extend(p.stdout)
+    p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, env=env)
+    stdout, stderr = p.communicate()
 
-        if p.returncode != 0:
-            pass
+    if p.returncode != 0:
+        raise RuntimeError(f"Command failed: {cmd}\n{stderr}")
 
-    return result
+    return stdout.splitlines()
 
 
 class _MLFlowLogger(multiprocessing.Process):
