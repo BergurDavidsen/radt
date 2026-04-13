@@ -9,8 +9,6 @@ from mlflow.entities import Metric as MlflowMetric
 from collections import deque
 import multiprocessing
 import queue
-import shutil
-import shlex
 
 from .listeners import listeners
 
@@ -29,22 +27,25 @@ def execute_command(cmd: str):
         str: stdout output of the command
     """
 
-    env = os.environ.copy()
-
     if isinstance(cmd, str):
-        # use shell ONLY for string commands
-        p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, env=env, shell=True)
-    else:
-        p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, env=env)
+        print("cmd is str")
+        cmd = cmd.split()
 
-    stdout, stderr = p.communicate()
+    env = os.environ.copy()
+    print(env)
 
-    if p.returncode != 0:
-        print(f"[DEBUG] Command failed: {cmd}")
-        print(f"[DEBUG] stderr: {stderr}")
-        raise RuntimeError(f"Command failed: {cmd}\n{stderr}")
+    result = []
+    with Popen(
+        cmd, stdout=PIPE, bufsize=1, universal_newlines=True, env=env, shell=True
+    ) as p:
+        result.extend(p.stdout)
+        
 
-    return stdout.splitlines()
+        if p.returncode != 0:
+            print("returncode was not 0: ", p.returncode)
+            pass
+        print(result)
+    return result
 
 
 class _MLFlowLogger(multiprocessing.Process):
@@ -159,6 +160,7 @@ def _get_benchmark_instance():
 def log_metric(name, value, epoch=0):
     """Module-level log_metric"""
     if "RADT_PRESENT" not in os.environ:
+        print("radt_present is not in environ in log metric")
         return
     instance = _get_benchmark_instance()
     instance.log_metric(name, value, epoch)
@@ -167,6 +169,7 @@ def log_metric(name, value, epoch=0):
 def log_metrics(metrics, epoch=0):
     """Module-level log_metrics"""
     if "RADT_PRESENT" not in os.environ:
+        print("radt_present is not in environ in log metrics plural")
         return
     instance = _get_benchmark_instance()
     instance.log_metrics(metrics, epoch)
@@ -189,6 +192,7 @@ class _RADTBenchmark:
         Will track ML operations while active.
         """
         if "RADT_PRESENT" not in os.environ:
+            print("radt_present is not in environ in the class")
             return
 
         try:
@@ -207,15 +211,15 @@ class _RADTBenchmark:
         except FileNotFoundError as e:
             pass
 
-        import shutil
-
-        if shutil.which("conda"):
-            try:
-                self.log_text("".join(execute_command("conda list")), "conda.txt")
-            except Exception as e:
-                print(f"Conda failed: {e}")
-        else:
-            print("Conda not available, skipping.")
+        try:
+            self.log_text("".join(execute_command("conda list")), "conda.txt")
+        except (
+            Exception
+        ) as e:  # Either a FileNotFoundError or DirectoryNotACondaEnvironmentError
+            print(
+                f"Conda not found or unreachable. Continuing without conda list. ({e})"
+            )
+            pass
 
         try:
             self.log_text("".join(execute_command("nvidia-smi")), "smi.txt")
