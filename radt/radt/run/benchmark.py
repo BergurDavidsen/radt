@@ -29,15 +29,19 @@ def execute_command(cmd: str):
         str: stdout output of the command
     """
 
-    if isinstance(cmd, str):
-        cmd = shlex.split(cmd)
-
     env = os.environ.copy()
 
-    p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, env=env)
+    if isinstance(cmd, str):
+        # use shell ONLY for string commands
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, env=env, shell=True)
+    else:
+        p = Popen(cmd, stdout=PIPE, stderr=PIPE, text=True, env=env)
+
     stdout, stderr = p.communicate()
 
     if p.returncode != 0:
+        print(f"[DEBUG] Command failed: {cmd}")
+        print(f"[DEBUG] stderr: {stderr}")
         raise RuntimeError(f"Command failed: {cmd}\n{stderr}")
 
     return stdout.splitlines()
